@@ -2,12 +2,12 @@
   "compilerOptions": {
     "target": "es6",
     "module": "commonjs",
-    "outDir": "/",
+    "outDir": "",
     "strict": false,
     "esModuleInterop": true
   },
   "include": [
     "app.ts",
-    "index.ts"
+    "router.ts"
   ]
 }

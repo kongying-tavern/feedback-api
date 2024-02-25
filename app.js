@@ -6,11 +6,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const morgan_1 = __importDefault(require("morgan"));
 const crypto_1 = __importDefault(require("crypto"));
-const index_1 = __importDefault(require("./index"));
+const router_1 = __importDefault(require("./router"));
 const app = (0, express_1.default)();
 // 环境变量
 const PORT = process.env.PORT || 3322;
 const salt = process.env.salt;
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    next();
+});
 // 权限验证中间件
 const authenticate = (req, res, next) => {
     const token = req.headers.authorization;
@@ -33,7 +37,7 @@ app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: false }));
 app.use(authenticate);
 // 路由
-app.use('/', index_1.default);
+app.use('/', router_1.default);
 // 启动服务器
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { validationResult, body } from 'express-validator';
 
 dotenv.config();
+
 const client = new lark.Client({
   appId: process.env.appId as string,
   appSecret: process.env.appSecret as string,

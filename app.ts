@@ -1,13 +1,18 @@
 import express, { Request, Response, NextFunction } from 'express';
 import logger from 'morgan';
 import crypto from 'crypto';
-import indexRouter from './index';
+import router from './router';
 
 const app = express();
 
 // 环境变量
-const PORT: number | string = process.env.PORT || 3000;
+const PORT: number | string = process.env.PORT || 3322;
 const salt: string | undefined = process.env.salt;
+
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+});
 
 // 权限验证中间件
 const authenticate = (req: Request, res: Response, next: NextFunction) => {
@@ -36,7 +41,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(authenticate);
 
 // 路由
-app.use('/', indexRouter);
+app.use('/', router);
 
 // 启动服务器
 app.listen(PORT, () => {
