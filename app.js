@@ -9,7 +9,7 @@ const crypto_1 = __importDefault(require("crypto"));
 const index_1 = __importDefault(require("./index"));
 const app = (0, express_1.default)();
 // 环境变量
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3322;
 const salt = process.env.salt;
 // 权限验证中间件
 const authenticate = (req, res, next) => {
