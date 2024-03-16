@@ -31,12 +31,10 @@ function authenticate(req, res, next) {
         return res.status(401).json({ message: 'Unauthorized', code: 401 });
     }
     const [timestamp, hashedTimestamp] = token.split(':');
-    // 验证 token 是否合法
     const currentTime = Date.now();
     // @ts-ignore
     const expectedHash = enc_base64_1.default.stringify((0, hmac_sha512_1.default)((0, sha256_1.default)(parseInt(timestamp)), index_1.SALT));
     if (hashedTimestamp !== expectedHash || Math.abs(currentTime - parseInt(timestamp)) > 5 * 60 * 1000) {
-        // 如果 token 不合法或已过期，返回未授权错误
         return res.status(401).json({ message: 'Unauthorized', code: 401 });
     }
     next();

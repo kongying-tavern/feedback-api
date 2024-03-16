@@ -14,7 +14,7 @@ app.use(helmet({
   crossOriginResourcePolicy: false,
 }));
 app.use(cors({
-  origin: 'http://localhost:5173' // 指定允许的来源
+  origin: 'https://yuanshen.site' // 指定允许的来源
 }));
 app.use(express.urlencoded({ extended: false }));
 app.use(middlewares.authenticate);
