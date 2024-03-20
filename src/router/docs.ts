@@ -4,7 +4,7 @@ import { handleErrors } from './handleError';
 import { v4 as uuidv4 } from 'uuid';
 import Field from '../interfaces/Field';
 import { getDataByPath } from '../utils'
-import { APP_TOKEN, DOCS_FEEDBACK_TABLE_ID, DOCS_TABLE_ID, DOCS_VIEW_ID, client } from '../config'
+import { ENV, client } from '../config'
 
 const router = express.Router();
 
@@ -22,8 +22,8 @@ const getRecordData = async (res: Response, record_id: string) => {
   try {
     const record_response = await client.bitable.appTableRecord.get({
       path: {
-        app_token: APP_TOKEN!,
-        table_id: DOCS_TABLE_ID!,
+        app_token: ENV.APP_TOKEN!,
+        table_id: ENV.DOCS_TABLE_ID!,
         record_id,
       },
     });
@@ -45,7 +45,7 @@ router.get('/pageview', body('record_id').optional({ nullable: true }), async (r
   pageview.data.push(String(record_id))
 
   try {
-    if (!pageview.timeStamp || (Date.now() - pageview.timeStamp) >= 300) {
+    if (!pageview.timeStamp || (Date.now() - pageview.timeStamp) >= 1500) {
       let data: {}[] = []
 
       for (const val of pageview.data) {
@@ -62,8 +62,8 @@ router.get('/pageview', body('record_id').optional({ nullable: true }), async (r
 
       const response = await client.bitable.appTableRecord.batchUpdate({
         path: {
-          app_token: APP_TOKEN!,
-          table_id: DOCS_TABLE_ID!,
+          app_token: ENV.APP_TOKEN!,
+          table_id: ENV.DOCS_TABLE_ID!,
         },
         data: {
           // @ts-ignore
@@ -90,16 +90,16 @@ router.get('/pageinfo', async (req: Request, res: Response) => {
   console.log(path)
 
   try {
-    if (!pageinfoData.timeStamp || (Date.now() - pageinfoData.timeStamp) >= 1000) {
+    if (!pageinfoData.timeStamp || (Date.now() - pageinfoData.timeStamp) >= 1500) {
       const response = await client.bitable.appTableRecord.list({
         path: {
-          app_token: APP_TOKEN!,
-          table_id: DOCS_TABLE_ID!,
+          app_token: ENV.APP_TOKEN!,
+          table_id: ENV.DOCS_TABLE_ID!,
         },
         params: {
           page_size: 500,
           automatic_fields: false,
-          view_id: DOCS_VIEW_ID,
+          view_id: ENV.DOCS_VIEW_ID,
           field_names: JSON.stringify(['path', 'id', 'pageview', 'good', 'bad', 'last_update'])
         },
       });
@@ -123,8 +123,8 @@ router.get('/pageinfo', async (req: Request, res: Response) => {
       }
       const response = await client.bitable.appTableRecord.create({
         path: {
-          app_token: APP_TOKEN!,
-          table_id: DOCS_TABLE_ID!,
+          app_token: ENV.APP_TOKEN!,
+          table_id: ENV.DOCS_TABLE_ID!,
         },
         data: {
           // @ts-ignore
@@ -170,8 +170,8 @@ router.post('/feedback', docFeedbackValidate, async (req: Request, res: Response
 
     const response = await client.bitable.appTableRecord.update({
       path: {
-        app_token: APP_TOKEN!,
-        table_id: DOCS_TABLE_ID!,
+        app_token: ENV.APP_TOKEN!,
+        table_id: ENV.DOCS_TABLE_ID!,
         record_id
       },
       data: { fields: resolveData() },
@@ -241,8 +241,8 @@ router.post('/feedback/new', validateDocsFeedbackData, async (req: Request, res:
   try {
     const response = await client.bitable.appTableRecord.create({
       path: {
-        app_token: APP_TOKEN!,
-        table_id: DOCS_FEEDBACK_TABLE_ID!,
+        app_token: ENV.APP_TOKEN!,
+        table_id: ENV.DOCS_FEEDBACK_TABLE_ID!,
       },
       data: {
         // @ts-ignore

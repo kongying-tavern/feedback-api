@@ -3,18 +3,25 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+export const WHITELIST = [
+  /^https:\/\/.*\.yuanshen\.site$/,
+  /^https:\/\/.*\.surge\.sh$/
+]
+
 export const client = new lark.Client({
   appId: process.env.APP_ID as string,
   appSecret: process.env.APP_SECRET as string,
   disableTokenCache: false
 });
 
-export const SALT = process.env.SALT;
-export const PORT = process.env.PORT;
-export const APP_TOKEN = process.env.APP_TOKEN
-export const TABLE_ID = process.env.TABLE_ID
-export const DOCS_TABLE_ID = process.env.DOCS_TABLE_ID
-export const DOCS_VIEW_ID = process.env.DOCS_VIEW_ID
-export const DOCS_FEEDBACK_TABLE_ID = process.env.DOCS_FEEDBACK_TABLE_ID
+export const ENV = {
+  SALT: process.env.SALT,
+  PORT: process.env.PORT,
+  APP_TOKEN: process.env.APP_TOKEN,
+  TABLE_ID: process.env.TABLE_ID,
+  DOCS_TABLE_ID: process.env.DOCS_TABLE_ID,
+  DOCS_VIEW_ID: process.env.DOCS_VIEW_ID,
+  DOCS_FEEDBACK_TABLE_ID: process.env.DOCS_FEEDBACK_TABLE_ID
+}
 
 export const isProduction = process.env.NODE_ENV === 'production'

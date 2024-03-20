@@ -1,6 +1,6 @@
 import multer, { Multer } from 'multer';
 import express, { Request, Response, NextFunction } from 'express';
-import { APP_TOKEN, client } from '../config'
+import { ENV, client } from '../config'
 import { calculateHash } from '../utils';
 
 const router = express.Router();
@@ -36,7 +36,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
       data: {
         file_name: `${new Date().getTime().toString()}-${hash}.${fileExtension}`,
         parent_type: 'bitable_image',
-        parent_node: APP_TOKEN!,
+        parent_node: ENV.APP_TOKEN!,
         size: req.file.size,
         file: req.file.buffer
       },

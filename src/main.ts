@@ -1,9 +1,9 @@
 import app from './index';
 
-import { PORT } from './config/index'
+import { ENV } from './config/index'
 
-app.listen(PORT, () => {
+app.listen(ENV.PORT, () => {
   /* eslint-disable no-console */
-  console.log(`Listening: http://localhost:${PORT}`);
+  console.log(`Listening: http://localhost:${ENV.PORT}`);
   /* eslint-enable no-console */
 });

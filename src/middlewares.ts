@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import sha256 from 'crypto-js/sha256';
 import hmacSHA512 from 'crypto-js/hmac-sha512';
 import Base64 from 'crypto-js/enc-base64';
-import { SALT } from './config/index'
+import { ENV, isProduction } from './config/index'
 
 import ErrorResponse from './interfaces/ErrorResponse';
 
@@ -24,13 +24,14 @@ export function errorHandler(err: Error, req: Request, res: Response<ErrorRespon
 
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   const token = req.headers.authorization;
+  if (req.hostname === 'localhost' && !isProduction) return next()
   if (!token) {
     return res.status(401).json({ message: 'Unauthorized', code: 401 });
   }
   const [timestamp, hashedTimestamp] = token.split(':');
   const currentTime = Date.now();
   // @ts-ignore
-  const expectedHash = Base64.stringify(hmacSHA512(sha256(parseInt(timestamp)), SALT));
+  const expectedHash = Base64.stringify(hmacSHA512(sha256(parseInt(timestamp)), ENV.SALT));
   if (hashedTimestamp !== expectedHash || Math.abs(currentTime - parseInt(timestamp)) > 5 * 60 * 1000) {
     return res.status(401).json({ message: 'Unauthorized', code: 401 });
   }

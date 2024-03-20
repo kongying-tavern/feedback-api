@@ -3,7 +3,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { handleErrors } from './handleError';
 import { v4 as uuidv4 } from 'uuid';
 
-import { APP_TOKEN, TABLE_ID, client } from '../config'
+import { ENV, client } from '../config'
 
 const router = express.Router();
 
@@ -58,8 +58,8 @@ router.post('/feedback', validatFeedbackData, async (req: Request, res: Response
   try {
     const response = await client.bitable.appTableRecord.create({
       path: {
-        app_token: APP_TOKEN!,
-        table_id: TABLE_ID!,
+        app_token: ENV.APP_TOKEN!,
+        table_id: ENV.TABLE_ID!,
       },
       data: {
         // @ts-ignore
@@ -92,8 +92,8 @@ const getRecordData = async (res: express.Response<any, Record<string, any>>, re
   try {
     const record_response = await client.bitable.appTableRecord.get({
       path: {
-        app_token: APP_TOKEN!,
-        table_id: process.env.DOCS_TABLE_ID!,
+        app_token: ENV.APP_TOKEN!,
+        table_id: ENV.DOCS_TABLE_ID!,
         record_id,
       },
     });

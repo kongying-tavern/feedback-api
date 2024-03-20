@@ -4,17 +4,28 @@ import logger from 'morgan';
 import helmet from 'helmet';
 import router from './router';
 import cors from 'cors'
+import { isProduction, WHITELIST } from './config';
 
 const app = express();
 
-// 中间件
 app.use(logger('dev'));
 app.use(express.json());
 app.use(helmet({
   crossOriginResourcePolicy: false,
 }));
 app.use(cors({
-  origin: 'https://yuanshen.site' // 指定允许的来源
+  origin: function (origin, callback) {
+    if (origin?.includes('localhost') && !isProduction) return callback(null, true)
+    WHITELIST.forEach((val, ind) => {
+      if (typeof val == 'string') {
+        if (origin?.includes(val)) return callback(null, true)
+      } else {
+        if (val.test(origin!)) return callback(null, true)
+      }
+      if (WHITELIST.length === ind) return callback(null, false);
+    })
+
+  }
 }));
 app.use(express.urlencoded({ extended: false }));
 app.use(middlewares.authenticate);
