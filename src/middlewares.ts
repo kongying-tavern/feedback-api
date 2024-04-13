@@ -11,7 +11,7 @@ export function notFound(req: Request, res: Response, next: NextFunction) {
   const error = new Error(`🔍 - Not Found - ${req.originalUrl}`);
   next(error);
 }
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 export function errorHandler(err: Error, req: Request, res: Response<ErrorResponse>, next: NextFunction) {
   const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
   res.status(statusCode);
@@ -37,3 +37,34 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
   }
   next();
 };
+
+const ipRequestsMap = new Map<string, number>();
+
+export function ipRateLimitMiddleware(req: Request, res: Response, next: NextFunction) {
+  let clientIP = req.ip!; // 获取请求的 IP 地址
+
+  if (typeof clientIP === 'undefined') res.status(400).json({ code: 400, message: 'Need IP Address' });
+  // 如果请求头中有代理，则取第一个地址作为客户端 IP
+  const forwardedFor = req.headers['x-forwarded-for'];
+  if (forwardedFor && typeof forwardedFor === 'string') {
+    clientIP = forwardedFor.split(',')[0];
+  }
+
+  if (ipRequestsMap.has(clientIP!)) {
+    const count = ipRequestsMap.get(clientIP)!;
+
+    if (count >= 100) {
+      return res.status(429).json({ code: 400, message: "Too Many Requests. Please try again later." });
+    }
+
+    ipRequestsMap.set(clientIP, count + 1);
+  } else {
+    ipRequestsMap.set(clientIP, 1);
+    setTimeout(() => {
+      ipRequestsMap.delete(clientIP);
+    }, 60 * 1000);
+  }
+
+  next();
+}
+

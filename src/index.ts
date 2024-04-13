@@ -28,6 +28,7 @@ app.use(cors({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
+app.use(middlewares.ipRateLimitMiddleware)
 app.use(middlewares.authenticate);
 
 app.use('/apis/v1', router);
