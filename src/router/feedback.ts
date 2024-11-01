@@ -1,6 +1,6 @@
 import { validationResult, body } from 'express-validator';
 import express, { Request, Response, NextFunction } from 'express';
-import { handleErrors } from './handleError';
+import { handleErrors, catchError } from './handleError';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ENV, client } from '../config'
@@ -35,7 +35,7 @@ const validatFeedbackData = [
 ];
 
 router.post('/feedback', validatFeedbackData, async (req: Request, res: Response) => {
-  const { content, user_id, nickname, platform, feedback_classify, feedback_type, file, user_env_info, pin_id, pin_creator_id, user_platform } = req.body;
+  const { content, user_id, nickname, platform, feedback_classify, feedback_type, file, user_env_info, user_contact, pin_id, pin_creator_id, user_platform } = req.body;
   const id = uuidv4();
 
   const _file = () => file ? { "file_attachment": [...file] } : {};
@@ -51,44 +51,43 @@ router.post('/feedback', validatFeedbackData, async (req: Request, res: Response
     "pin_id": pin_id || '-1',
     "pin_creator_id": pin_creator_id || '-1',
     "user_platform": user_platform || 'Unknown',
+    "user_contact": user_contact || '未提供',
     "feedback_type": feedback_type || '提建议',
     "feedback_date": new Date().getTime(),
   }
 
-  try {
-    const response = await client.bitable.appTableRecord.create({
-      path: {
-        app_token: ENV.APP_TOKEN!,
-        table_id: ENV.TABLE_ID!,
-      },
+  const [error, response] = await catchError(client.bitable.appTableRecord.create({
+    path: {
+      app_token: ENV.APP_TOKEN!,
+      table_id: ENV.TABLE_ID!,
+    },
+    data: {
+      // @ts-ignore
+      fields: Object.assign({}, _file(), data),
+    },
+  }));
+
+  if (error) return handleErrors(res, error);
+
+  if (response.code === 0) {
+    return res.status(200).json({
+      message: 'success',
+      code: 200,
       data: {
         // @ts-ignore
-        fields: Object.assign({}, _file(), data),
-      },
+        id: response.data.record["id"],
+        feedback_id: id,
+        // @ts-ignore
+        record_id: response.data.record["record_id"]
+      }
     });
-
-    if (response.code === 0) {
-      return res.status(200).json({
-        message: 'success',
-        code: 200,
-        data: {
-          // @ts-ignore
-          id: response.data.record["id"],
-          feedback_id: id,
-          // @ts-ignore
-          record_id: response.data.record["record_id"]
-        }
-      });
-    } else {
-      res.status(500).json({ code: response.code, message: response.msg });
-    }
-  } catch (error: any) {
-    handleErrors(res, error);
+  } else {
+    res.status(500).json({ code: response.code, message: response.msg });
   }
 });
 
 // Function to fetch record data by record_id
-const getRecordData = async (res: express.Response<any, Record<string, any>>, record_id: any) => {
+const getRecordData = async (res: Response, record_id: string) => {
   try {
     const record_response = await client.bitable.appTableRecord.get({
       path: {

@@ -1,4 +1,5 @@
 import * as lark from '@larksuiteoapi/node-sdk';
+import { rateLimit } from 'express-rate-limit'
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -25,3 +26,14 @@ export const ENV = {
 }
 
 export const isProduction = process.env.NODE_ENV === 'production'
+
+export const limiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 100,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    code: 429,
+    message: "Too Many Requests. Please try again later."
+  },
+})

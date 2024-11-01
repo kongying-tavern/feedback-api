@@ -1,6 +1,6 @@
 import { validationResult, body } from 'express-validator';
 import express, { Request, Response, NextFunction } from 'express';
-import { handleErrors } from './handleError';
+import { handleErrors, catchError } from './handleError';
 import { v4 as uuidv4 } from 'uuid';
 import Field from '../interfaces/Field';
 import { getDataByPath } from '../utils'
@@ -10,12 +10,14 @@ const router = express.Router();
 
 let pageinfoData: { data: Field | object, timeStamp: number } = {
   data: {},
-  timeStamp: -1
+  timeStamp: 1
 }
 let pageview: { data: string[], timeStamp: number } = {
   data: [],
-  timeStamp: -1
+  timeStamp: 1
 }
+
+let lastUpdateData = 1;
 
 // Function to fetch record data by record_id
 const getRecordData = async (res: Response, record_id: string) => {
@@ -43,9 +45,8 @@ const getRecordData = async (res: Response, record_id: string) => {
 router.get('/pageview', body('record_id').optional({ nullable: true }), async (req: Request, res: Response) => {
   const { record_id } = req.query;
   pageview.data.push(String(record_id))
-
   try {
-    if (!pageview.timeStamp || (Date.now() - pageview.timeStamp) >= 1500) {
+    if ((Date.now() - pageview.timeStamp) >= 1000 * 3) {
       let data: {}[] = []
 
       for (const val of pageview.data) {
@@ -75,8 +76,9 @@ router.get('/pageview', body('record_id').optional({ nullable: true }), async (r
       pageview.data = [];
       if (response.code === 0) {
         res.status(200).json({ code: '200', message: 'success' })
+        lastUpdateData = Date.now()
       } else {
-        throw { code: response.code, message: response.msg };
+        return res.json({ code: response.code, message: response.msg })
       }
     }
     pageview.timeStamp = Date.now()
@@ -87,60 +89,62 @@ router.get('/pageview', body('record_id').optional({ nullable: true }), async (r
 
 router.get('/pageinfo', async (req: Request, res: Response) => {
   const { path } = req.query;
-  console.log(path)
+  const current = Date.now()
 
-  try {
-    if (!pageinfoData.timeStamp || (Date.now() - pageinfoData.timeStamp) >= 1500) {
-      const response = await client.bitable.appTableRecord.list({
-        path: {
-          app_token: ENV.APP_TOKEN!,
-          table_id: ENV.DOCS_TABLE_ID!,
-        },
-        params: {
-          page_size: 500,
-          automatic_fields: false,
-          view_id: ENV.DOCS_VIEW_ID,
-          field_names: JSON.stringify(['path', 'id', 'pageview', 'good', 'bad', 'last_update'])
-        },
-      });
+  if (current - pageinfoData.timeStamp >= 1000 * 3 && lastUpdateData >= pageinfoData.timeStamp) {
+    const [error, response] = await catchError(client.bitable.appTableRecord.list({
+      path: {
+        app_token: ENV.APP_TOKEN!,
+        table_id: ENV.DOCS_TABLE_ID!,
+      },
+      params: {
+        page_size: 500,
+        automatic_fields: false,
+        view_id: ENV.DOCS_VIEW_ID,
+        field_names: JSON.stringify(['path', 'id', 'pageview', 'good', 'bad', 'last_update'])
+      },
+    }))
 
-      if (response.code === 0) {
-        // @ts-ignore
-        pageinfoData.data = response.data;
-        pageinfoData.timeStamp = Date.now();
-      } else {
-        throw { code: response.code, message: response.msg };
-      }
+    if (error) return handleErrors(res, error)
+
+    pageinfoData.timeStamp = Date.now();
+
+    if (response.code === 0) {
+      // @ts-ignore
+      pageinfoData.data = response.data;
+    } else {
+      return res.json({ code: response.code, message: response.msg })
     }
-
-    let pageinfo = getDataByPath(pageinfoData.data, path);
-    if (!pageinfo) {
-      const newData = {
-        "good": 0,
-        "pageview": 0,
-        "bad": 0,
-        "path": path
-      }
-      const response = await client.bitable.appTableRecord.create({
-        path: {
-          app_token: ENV.APP_TOKEN!,
-          table_id: ENV.DOCS_TABLE_ID!,
-        },
-        data: {
-          // @ts-ignore
-          fields: newData
-        }
-      })
-      if (response.code === 0) {
-        pageinfo = Object.assign(newData, { record_id: response.data?.record?.record_id })
-      } else {
-        throw { code: response.code, message: response.msg };
-      }
-    }
-    res.status(200).json({ code: '200', message: 'success', data: pageinfo });
-  } catch (error: any) {
-    handleErrors(res, error);
   }
+
+  let pageinfo = getDataByPath(pageinfoData.data, path);
+  if (!pageinfo) {
+    const newData = {
+      "good": 0,
+      "pageview": 0,
+      "bad": 0,
+      "path": path
+    }
+    const [error, response] = await catchError(client.bitable.appTableRecord.create({
+      path: {
+        app_token: ENV.APP_TOKEN!,
+        table_id: ENV.DOCS_TABLE_ID!,
+      },
+      data: {
+        // @ts-ignore
+        fields: newData
+      }
+    }))
+
+    if (error) return handleErrors(res, error);
+
+    if (response.code === 0) {
+      pageinfo = Object.assign(newData, { record_id: response.data?.record?.record_id })
+    } else {
+      return res.json({ code: response.code, message: response.msg })
+    }
+  }
+  res.status(200).json({ code: '200', message: 'success', data: pageinfo });
 });
 
 const docFeedbackValidate = [
@@ -179,6 +183,7 @@ router.post('/feedback', docFeedbackValidate, async (req: Request, res: Response
 
     if (response.code === 0) {
       res.status(200).json({ message: 'success', code: 200 });
+      lastUpdateData = Date.now()
     } else {
       throw { code: response.code, message: response.msg };
     }
